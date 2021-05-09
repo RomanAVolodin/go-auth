@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 )
 
 type person struct {
 	First string `json:"first_name"`
 }
 
-func main()  {
+func main() {
 	p1 := person{
 		First: "Roman",
 	}
@@ -36,4 +37,34 @@ func main()  {
 	}
 
 	fmt.Println("back to go datastructure", xp2)
+
+	http.HandleFunc("/encode", foo)
+	http.HandleFunc("/decode", bar)
+	http.ListenAndServe(":8080", nil)
+}
+
+func foo(w http.ResponseWriter, r *http.Request) {
+	p1 := person{
+		First: "Roman",
+	}
+	p2 := person{
+		First: "Julia",
+	}
+
+	xp := []person{p1, p2}
+
+	err := json.NewEncoder(w).Encode(xp)
+	if err != nil {
+		log.Println("Encoded bad data:", err)
+	}
+}
+
+func bar(w http.ResponseWriter, r *http.Request) {
+	var p1 []person
+	err := json.NewDecoder(r.Body).Decode(&p1)
+	if err != nil {
+		log.Println("Decoded bad data:", err)
+	}
+
+	log.Println("Person fron incomming json:", p1)
 }
