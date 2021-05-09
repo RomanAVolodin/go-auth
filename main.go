@@ -1,70 +1,42 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
-type person struct {
-	First string `json:"first_name"`
+func hashPassword(password string) ([]byte, error) {
+
+	bs, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("Error occured %w", err)
+	}
+
+	return bs, nil
 }
+
+func comparePassword(password string, hashedPass []byte) error {
+	err := bcrypt.CompareHashAndPassword(hashedPass, []byte(password))
+	if err != nil {
+		return fmt.Errorf("Invalid password %w", err)
+	}
+	return nil
+}
+
 
 func main() {
-	p1 := person{
-		First: "Roman",
-	}
-
-	p2 := person{
-		First: "Julia",
-	}
-
-	xp := []person{p1, p2}
-
-	bs, err := json.Marshal(xp)
+	pass := "12345"
+	hashedPass, err := hashPassword(pass)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 
-	fmt.Println("Print JSON", string(bs))
-
-	xp2 := []person{}
-
-	err = json.Unmarshal(bs, &xp2)
+	err = comparePassword(pass, hashedPass)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalln("Not logged in")
 	}
 
-	fmt.Println("back to go datastructure", xp2)
-
-	http.HandleFunc("/encode", foo)
-	http.HandleFunc("/decode", bar)
-	http.ListenAndServe(":8080", nil)
-}
-
-func foo(w http.ResponseWriter, r *http.Request) {
-	p1 := person{
-		First: "Roman",
-	}
-	p2 := person{
-		First: "Julia",
-	}
-
-	xp := []person{p1, p2}
-
-	err := json.NewEncoder(w).Encode(xp)
-	if err != nil {
-		log.Println("Encoded bad data:", err)
-	}
-}
-
-func bar(w http.ResponseWriter, r *http.Request) {
-	var p1 []person
-	err := json.NewDecoder(r.Body).Decode(&p1)
-	if err != nil {
-		log.Println("Decoded bad data:", err)
-	}
-
-	log.Println("Person fron incomming json:", p1)
+	log.Printf("Logged in! with hash %s", hashedPass)
 }
